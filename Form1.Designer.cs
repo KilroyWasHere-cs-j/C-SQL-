@@ -53,6 +53,8 @@
             this.ParamThree = new System.Windows.Forms.TextBox();
             this.ParamFour = new System.Windows.Forms.TextBox();
             this.OpenLoggerbtn = new System.Windows.Forms.Button();
+            this.radioButton1 = new System.Windows.Forms.RadioButton();
+            this.UseSMSRB = new System.Windows.Forms.RadioButton();
             this.SuspendLayout();
             // 
             // button1
@@ -98,6 +100,7 @@
             this.listBox2.Name = "listBox2";
             this.listBox2.Size = new System.Drawing.Size(382, 407);
             this.listBox2.TabIndex = 4;
+            this.listBox2.SelectedIndexChanged += new System.EventHandler(this.ListBox2_SelectedIndexChanged);
             // 
             // listBox3
             // 
@@ -270,7 +273,7 @@
             // 
             // OpenLoggerbtn
             // 
-            this.OpenLoggerbtn.Location = new System.Drawing.Point(672, 5);
+            this.OpenLoggerbtn.Location = new System.Drawing.Point(366, 5);
             this.OpenLoggerbtn.Name = "OpenLoggerbtn";
             this.OpenLoggerbtn.Size = new System.Drawing.Size(75, 23);
             this.OpenLoggerbtn.TabIndex = 24;
@@ -278,11 +281,37 @@
             this.OpenLoggerbtn.UseVisualStyleBackColor = true;
             this.OpenLoggerbtn.Click += new System.EventHandler(this.OpenLoggerbtn_Click);
             // 
+            // radioButton1
+            // 
+            this.radioButton1.AutoSize = true;
+            this.radioButton1.Location = new System.Drawing.Point(1399, 476);
+            this.radioButton1.Name = "radioButton1";
+            this.radioButton1.Size = new System.Drawing.Size(88, 17);
+            this.radioButton1.TabIndex = 25;
+            this.radioButton1.TabStop = true;
+            this.radioButton1.Text = "includParams";
+            this.radioButton1.UseVisualStyleBackColor = true;
+            this.radioButton1.CheckedChanged += new System.EventHandler(this.RadioButton1_CheckedChanged);
+            // 
+            // UseSMSRB
+            // 
+            this.UseSMSRB.AutoSize = true;
+            this.UseSMSRB.Location = new System.Drawing.Point(447, 12);
+            this.UseSMSRB.Name = "UseSMSRB";
+            this.UseSMSRB.Size = new System.Drawing.Size(48, 17);
+            this.UseSMSRB.TabIndex = 27;
+            this.UseSMSRB.TabStop = true;
+            this.UseSMSRB.Text = "SMS";
+            this.UseSMSRB.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoSize = true;
             this.ClientSize = new System.Drawing.Size(1604, 555);
+            this.Controls.Add(this.UseSMSRB);
+            this.Controls.Add(this.radioButton1);
             this.Controls.Add(this.OpenLoggerbtn);
             this.Controls.Add(this.ParamFour);
             this.Controls.Add(this.ParamThree);
@@ -313,6 +342,7 @@
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.Form1_MouseDoubleClick);
+            this.MouseLeave += new System.EventHandler(this.Mouse_ComeBack);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -345,6 +375,8 @@
         private System.Windows.Forms.TextBox ParamThree;
         private System.Windows.Forms.TextBox ParamFour;
         private System.Windows.Forms.Button OpenLoggerbtn;
+        private System.Windows.Forms.RadioButton radioButton1;
+        private System.Windows.Forms.RadioButton UseSMSRB;
     }
 }
 

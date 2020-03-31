@@ -1,0 +1,17 @@
+﻿//sets version number
+versionNumber - V.2.5
+
+//set clock time format
+timeFormat - HH:mm:ss
+
+//sets text updates phone number
+SMSPhoneNumber - 2074025424
+
+//activates text update
+SMSActive - True
+
+//sets UI's background colour scheme 
+ThemeBackColour - Black
+
+//sets UI's foreground colour scheme
+ThemeForeColour - White
