@@ -2,10 +2,13 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
+using System.Net;
+using System.Net.Mail;
 
 
 namespace WindowsFormsApp4
@@ -18,34 +21,27 @@ namespace WindowsFormsApp4
     {
         SqlConnection cn = new SqlConnection();
         Logger logger = new Logger();
+        PerformanceCounter cpuCounter;
+        PerformanceCounter ramCounter;
         private int items = 0;
         private string queryString = "";
         //private string fileOut = ""; //not used 
         private readonly List<string> fileOutPuts = new List<string>();
+        private string item = "";
         //private int count = 0;
 
         public Form1()
         {
             InitializeComponent();
-            listBox1.ForeColor = Color.AntiqueWhite;  //listBox one look
-            listBox1.BackColor = Color.Black;
-            listBox2.ForeColor = Color.AntiqueWhite; //listBox two look
-            listBox2.BackColor = Color.Black;
-            listBox3.ForeColor = Color.AntiqueWhite; //listBox three look
-            listBox3.BackColor = Color.Black;
-            SProctxt.ForeColor = Color.AntiqueWhite; //listBox Stored Procedure
-            SProctxt.BackColor = Color.Black;
-            this.ForeColor = Color.White; //Form1 look
-            this.BackColor = Color.Black;
-            button1.ForeColor = Color.AntiqueWhite; //button one look
-            button1.BackColor = Color.Black;
-            button2.ForeColor = Color.AntiqueWhite; //button two look
-            button2.BackColor = Color.Black;
+            //setup cpu and ram trackers
+            cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+            ramCounter = new PerformanceCounter("Memory", "Available MBytes");
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            label7.Text = "V.2.0";
+            readSQLConfig("versionNumber - ");
+            label7.Text = item;
             updateLogger("<----------------->>" + label7.Text + "<<----------------->");
             setColors();
             Thread thread1 = new Thread(new ThreadStart(TimeThread));
@@ -62,7 +58,8 @@ namespace WindowsFormsApp4
                 {
                     Invoke(new Action(() => //allows us to access textBox in other thread
                     {
-                        DateTimeLabel.Text = aDate.ToString("HH:mm:ss");
+                        readSQLConfig("timeFormat - ");
+                        DateTimeLabel.Text = aDate.ToString(item);
                     }));
                 }
                 catch
@@ -92,22 +89,25 @@ namespace WindowsFormsApp4
 
         private void setColors()
         {
-            listBox1.ForeColor = Color.AntiqueWhite;  //listBox one look
-            listBox1.BackColor = Color.Black;
-            listBox2.ForeColor = Color.AntiqueWhite; //listBox two look
-            listBox2.BackColor = Color.Black;
-            listBox3.ForeColor = Color.AntiqueWhite; //listBox three look
-            listBox3.BackColor = Color.Black;
-            SProctxt.ForeColor = Color.AntiqueWhite; //listBox Stored Procedure
-            SProctxt.BackColor = Color.Black;
-            this.ForeColor = Color.White; //Form1 look
-            this.BackColor = Color.Black;
-            button1.ForeColor = Color.AntiqueWhite; //button one look
-            button1.BackColor = Color.Black;
-            button2.ForeColor = Color.AntiqueWhite; //button two look
-            button2.BackColor = Color.Black;
-            OpenLoggerbtn.ForeColor = Color.White;
-            OpenLoggerbtn.BackColor = Color.Black;
+            readSQLConfig("ThemeBackColour - ");
+            listBox1.BackColor = Color.FromName(item); //set backcolours
+            listBox2.BackColor = Color.FromName(item);
+            listBox3.BackColor = Color.FromName(item);
+            SProctxt.BackColor = Color.FromName(item);
+            button1.BackColor = Color.FromName(item);
+            button2.BackColor = Color.FromName(item);
+            OpenLoggerbtn.BackColor = Color.FromName(item);
+            this.BackColor = Color.FromName(item); //Form1 look
+
+            //set forecolours
+            readSQLConfig("ThemeForeColour - ");
+            listBox1.ForeColor = Color.FromName(item);  
+            button2.ForeColor = Color.FromName(item); 
+            button1.ForeColor = Color.FromName(item); 
+            SProctxt.ForeColor = Color.FromName(item); 
+            listBox2.ForeColor = Color.FromName(item);
+            OpenLoggerbtn.ForeColor = Color.FromName(item);
+            this.ForeColor = Color.FromName(item); //Form1 look
         }
 
         private void QueryThread()
@@ -117,7 +117,7 @@ namespace WindowsFormsApp4
                 listBox3.Items.Add("<<Connecting to database>> -- <<Update--Success>>");
                 updateLogger("<<Connecting to database>> -- <<Update--Success>>");
             }));
-            string con = "Data Source=BA-R9WLXVM\\MSSQLSERVER03;Initial Catalog=DATEBASE_TWO;Integrated Security=True;"; 
+            string con = "Data Source=BA-R9WLXVM\\MSSQLSERVER03;Initial Catalog=DATEBASE_TWO;Integrated Security=True;";
             //+ DataSource +                                                                                                            
             //";integrated Security=sspi;initial catalog=" + InitialCatalog + ";");  ";
             try
@@ -144,7 +144,14 @@ namespace WindowsFormsApp4
                 listBox3.Items.Add("<<Opening database connection>> -- <<Update--Success>>");
                 updateLogger("<<Opening database connection>> -- <<Update--Success>>");
             }));
-            cn.Open();
+            try
+            {
+                cn.Open();
+            }
+            catch
+            {
+                MessageBox.Show(cn.GetSchema().ToString());
+            }
 
             using (SqlCommand cmd = new SqlCommand(queryString, cn))
             {
@@ -153,15 +160,18 @@ namespace WindowsFormsApp4
                     SqlDataReader reader = cmd.ExecuteReader(); //If queryString is not a correct query
                     try
                     {
-                        while (reader.Read())
+                        while (reader.Read()) // prints the output of the query
                         {
                             Invoke(new Action(() =>
                             {
+                                //<summary>
+                                //following lines format outputs for query into strings
+                                //<summary>
                                 listBox1.Items.Add(String.Format("{0}, {1}, {2}, {3}", reader[0], reader[1], reader[2], reader[3]));
                                 listBox2.Items.Add("(" + String.Format("{0}, {1}, {2}", reader[0], reader[1], reader[2]) + ")");
                                 fileOutPuts.Add("[" + String.Format("{0}, {1}, {2}", reader[0], reader[1], reader[2]) + "], ");
-                                items++;
-                                labelItems.Text = items.ToString();
+                                items++; // number of items found items
+                                labelItems.Text = items.ToString(); // adds items to labelItems
                             }));
                         }
                     }
@@ -169,8 +179,8 @@ namespace WindowsFormsApp4
                     {
                         // Always call Close when done reading.
                         reader.Close();
-                        Thread fileThread = new Thread(new ThreadStart(writeOutData));
-                        fileThread.Start(); //fileOut needs locking
+                        Thread fileThread = new Thread(new ThreadStart(writeOutData)); //starts file writeing thread
+                        fileThread.Start(); 
                         //writeOut(fileOut);
                         Invoke(new Action(() =>
                         {
@@ -182,7 +192,7 @@ namespace WindowsFormsApp4
                 {
                     Invoke(new Action(() =>
                     {
-                        listBox3.Items.Clear();
+                        listBox3.Items.Clear(); //updates logger listbox
                         listBox3.Items.Add("<<Invalid Query String>> -- <<Update Fail>>");
                         updateLogger("<<Invalid Query String>> -- <<Update Fail>>");
                     }));
@@ -195,15 +205,16 @@ namespace WindowsFormsApp4
             lock (cn)
             {
                 StreamWriter writer = new StreamWriter("C:/LogFiles/EllieSQLFileOut.txt"); //write query outputs
-                updateLogger("<------------------->>{writer}[C:/LogFiles/EllieSQLFileOut.txt]<<------------------->");
+                updateLogger("<------------------->>{C:/LogFiles/EllieSQLFileOut.txt}[]<<------------------->");
                 foreach (string line in fileOutPuts)
                 {
                     writer.Write(line);
                 }
                 writer.Close();
                 System.Diagnostics.Process.Start("C:/LogFiles/EllieSQLFileOut.txt"); //opens file
+                SMS("Process Done One");
                 StreamWriter writer2 = new StreamWriter("C:/LogFiles/Ones.txt"); //write out ones
-                updateLogger("<------------------->>{writer2}[C:/LogFiles/EllieSQLFileOut.txt]<<------------------->");
+                updateLogger("<------------------->>{C:/LogFiles/Ones.txt}[]<<------------------->");
                 writer2.Write("[");
                 for (int i = 0; i <= items; i++)
                 {
@@ -213,6 +224,7 @@ namespace WindowsFormsApp4
                 writer2.Write("]");
                 writer2.Close();
                 System.Diagnostics.Process.Start("C:/LogFiles/Ones.txt"); //opens file
+                SMS("Process Two Done");
             }
         }
 
@@ -231,22 +243,28 @@ namespace WindowsFormsApp4
                     SqlConnection conn = new SqlConnection(con);
                     conn.Open();
                     SqlCommand cmd = new SqlCommand(StoredProctxt.Text.ToString(), conn);
+                    //<summary>
+                    //adds params
+                    //<summary>
                     cmd.CommandType = CommandType.StoredProcedure;
-                    if(Param1txt.Text != "One")
+                    if(radioButton1.Checked == true)
                     {
-                        cmd.Parameters.AddWithValue("@dataOne", Param1txt.Text.ToString());
-                    }
-                    if(ParamTwotxt.Text != "Two")
-                    {
-                        cmd.Parameters.AddWithValue("@dataTwo", ParamTwotxt.Text.ToString());
-                    }
-                    if(ParamThree.Text != "Three")
-                    {
-                        cmd.Parameters.AddWithValue("@dataThree", ParamThree.Text.ToString());
-                    }
-                    if(ParamFour.Text != "Four")
-                    {
-                        cmd.Parameters.AddWithValue("@dataFour", ParamFour.Text.ToString());
+                        if (Param1txt.Text != "One")
+                        {
+                            cmd.Parameters.AddWithValue("@dataOne", Param1txt.Text.ToString());
+                        }
+                        if (ParamTwotxt.Text != "Two")
+                        {
+                            cmd.Parameters.AddWithValue("@dataTwo", ParamTwotxt.Text.ToString());
+                        }
+                        if (ParamThree.Text != "Three")
+                        {
+                            cmd.Parameters.AddWithValue("@dataThree", ParamThree.Text.ToString());
+                        }
+                        if (ParamFour.Text != "Four")
+                        {
+                            cmd.Parameters.AddWithValue("@dataFour", ParamFour.Text.ToString());
+                        }
                     }
                     SqlDataReader reader = cmd.ExecuteReader();
                     //MessageBox.Show(reader.Read().ToString());
@@ -259,6 +277,9 @@ namespace WindowsFormsApp4
                         count++;
                         Invoke(new Action(() =>
                         {
+                            //<summary>
+                            //formats & outputs query string
+                            //<summary>
                             SProctxt.Items.Add("<-------------------------------------------------->");
                             SPLabel.Text = count.ToString();
                             count++;
@@ -286,7 +307,7 @@ namespace WindowsFormsApp4
                 else
                 {
                     MessageBox.Show("No Procedre Name", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    updateLogger("<------------------->>[No Procedre Name]< ------------------->");
+                    updateLogger("<------------------->>[No Procedre Name]<<------------------->");
                 }
             }
         }
@@ -350,7 +371,7 @@ namespace WindowsFormsApp4
 
         private void startLogger()
         {
-            logger.openLogger();
+            logger.openLogger(getAvailableRAM(), getCurrentCPU());
         }
 
         private void OpenLoggerbtn_Click(object sender, EventArgs e)
@@ -361,12 +382,118 @@ namespace WindowsFormsApp4
 
         private void updateLogger(string data)
         {
-            logger.writeToLogger(data);
+            logger.writeToLogger(data, getAvailableRAM(), getCurrentCPU());
         }
 
         private void exitLogger()
         {
+            string holdNULL = "NULL";
+            updateLogger(holdNULL);
             logger.closeLogger();
+        }
+
+        public string getCurrentCPU()
+        {
+            return cpuCounter.NextValue().ToString();
+        }
+
+        public string getAvailableRAM()
+        {
+            return ramCounter.NextValue().ToString();
+        }
+
+        public void readSQLConfig(string idOfItem)
+        {
+            StreamReader read = new StreamReader("SQLConfig.txt");
+            var lines = read.ReadToEnd().Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i != lines.Length; i++)
+            {
+                if (lines[i].Contains(idOfItem))
+                {
+                    item = lines[i].Replace(idOfItem, "");
+                }
+            }
+        }
+
+        private void RadioButton1_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void SMS(string Mess)
+        {
+            if(useSMS() == true)
+            {
+                readSQLConfig("SMSActive - ");
+                string itemOne = item;
+                if (itemOne == "True")
+                {
+                    var message = new MailMessage();
+                    message.From = new MailAddress("2074025424@vtext.com");
+                    readSQLConfig("SMSPhoneNumber - ");
+                    string itemTwo = item;
+                    string number = itemTwo + "@vtext.com";
+                    message.To.Add(new MailAddress(number));//See carrier destinations below
+                                                            //message.To.Add(new MailAddress("2077477757@vtext.com"));
+                                                            //message.To.Add(new MailAddress("5551234568@txt.att.net"));
+
+                    //message.CC.Add(new MailAddress("carboncopy@foo.bar.com"));
+                    message.Body = Mess;
+
+                    var client = new SmtpClient();
+                    using (SmtpClient client1 = new SmtpClient())
+                    {
+                        client.EnableSsl = true;
+                        client.UseDefaultCredentials = false;
+                        client.Credentials = new NetworkCredential("emmanoaa945@gmail.com", "EmmaIsBest");
+                        client.Host = "	smtp.gmail.com";
+                        client.Port = 587;
+                        client.DeliveryMethod = SmtpDeliveryMethod.Network;
+
+                        client.Send(message);
+                    }
+                }
+                else
+                {
+                    notActivated();
+                }
+            }
+            else
+            {
+                
+            }
+        }
+
+        bool useSMS()
+        {
+            if(UseSMSRB.Checked == true)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        bool notActivated()
+        {
+            return true;
+        }
+
+        private void Phone_Click(object sender, EventArgs e)
+        {
+            SMS("Message");
+        }
+
+        private void ListBox2_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Mouse_ComeBack(object sender, EventArgs e)
+        {
+            updateLogger("<---------------->>[Mouse Left Form1]<<----------------------->");
         }
     }
 }
